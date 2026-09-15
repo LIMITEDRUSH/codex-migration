@@ -38,6 +38,8 @@ No third-party Python dependencies are required.
 
 ## Quick start
 
+For a concise bilingual introduction to the workflow and design, read [Quick Start / 快速开始](docs/QUICKSTART_BILINGUAL.md).
+
 ## 一键 U 盘迁移（推荐）
 
 一次性前提：源电脑和目标电脑都要有 Python 3.10+；目标电脑还要先安装 Codex、启动一次后完全退出。无需 OneDrive，也不需要在新电脑重新下载本项目。
