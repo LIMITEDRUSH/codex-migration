@@ -1,8 +1,22 @@
 # Codex Migration
 
-`codex-migration` is a local-first, cross-platform migration and recovery toolkit for Codex Desktop data. Version 0.2 provides a USB-first one-click product flow: scope review, package creation, integrity verification, staging restore, path remapping, and acceptance evidence.
+[![English guide](https://img.shields.io/badge/Read-English-2563EB?style=for-the-badge)](docs/QUICKSTART_EN.md)
+[![中文说明](https://img.shields.io/badge/阅读-中文说明-DC2626?style=for-the-badge)](docs/QUICKSTART_ZH.md)
 
-It was designed from an actual Windows profile migration: project files, local conversations, sessions, skills, plugins, SQLite state, attachments, and UI project mappings are related but **not the same thing**. Copying one of them alone is not a complete migration.
+Move a working Codex Desktop setup to another Windows or Mac computer with a USB drive. It packages portable Codex data and complete Codex project folders, verifies the package, restores files first, and then updates known project paths.
+
+通过 U 盘将可工作的 Codex Desktop 环境迁移到另一台 Windows 或 Mac。它打包可迁移的 Codex 数据和完整项目文件夹，校验迁移包，先恢复文件，再更新已知项目路径。
+
+**No cloud required · 不依赖云盘**  
+**Windows ⇄ macOS · 支持 Windows 与 macOS 双向迁移**
+
+## Start here / 从这里开始
+
+| Old computer / 旧电脑 | New computer / 新电脑 |
+| --- | --- |
+| Fully quit Codex, insert a USB drive, then double-click `START-EXPORT-TO-USB.cmd` (Windows) or `START-EXPORT-TO-USB.command` (macOS). | Install and open Codex once, fully quit it, then run `launcher/RESTORE-WINDOWS.cmd` or `launcher/RESTORE-MAC.command` from the USB package. |
+
+Choose a language for the full three-step guide: [English](docs/QUICKSTART_EN.md) · [中文](docs/QUICKSTART_ZH.md).
 
 > This is an independent utility, not an OpenAI product. Codex's desktop storage schema can change. Always keep the source computer and an independent package until the target passes verification.
 
@@ -35,10 +49,6 @@ It was designed from an actual Windows profile migration: project files, local c
 - Codex/ChatGPT Desktop and all Codex CLI sessions fully exited before export or `restore --apply`.
 
 No third-party Python dependencies are required.
-
-## Quick start
-
-For a concise bilingual introduction to the workflow and design, read [Quick Start / 快速开始](docs/QUICKSTART_BILINGUAL.md).
 
 ## 一键 U 盘迁移（推荐）
 
