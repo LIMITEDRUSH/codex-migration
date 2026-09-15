@@ -91,7 +91,7 @@ Codex-Migration-Package/
 | `verify` | No | Recompute every manifest hash. |
 | `restore` | No by default | Build a restore plan; `--apply` stages and replaces the target only after a full backup. |
 
-Read [Safety and recovery](docs/SAFETY.md) and [Architecture](docs/ARCHITECTURE.md) before restoring data.
+Read [Safety and recovery](docs/SAFETY.md), [Architecture](docs/ARCHITECTURE.md), and the step-by-step [Chinese migration runbook](docs/RUNBOOK_ZH.md) before restoring data.
 
 ## Development
 
