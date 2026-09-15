@@ -1,0 +1,2 @@
+# Packages are exchanged with macOS/Linux; retain portable LF line endings in source.
+* text=auto eol=lf

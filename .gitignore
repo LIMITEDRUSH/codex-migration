@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+build/
+dist/
+*.egg-info/
+
+# Migration packages can contain private conversations, source code, and paths.
+Codex-Migration-Package/
+codex-migration-backup-*/
+*.codex-migration-report.json
+codex-home-inspection.json
