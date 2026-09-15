@@ -7,7 +7,7 @@ Move a working Codex Desktop setup to another Windows or Mac computer with a USB
 
 通过 U 盘将可工作的 Codex Desktop 环境迁移到另一台 Windows 或 Mac。它打包可迁移的 Codex 数据和完整项目文件夹，校验迁移包，先恢复文件，再更新已知项目路径。
 
-**No cloud required · 不依赖云盘**  
+**No cloud required · 不依赖云盘**<br>
 **Windows ⇄ macOS · 支持 Windows 与 macOS 双向迁移**
 
 ## Start here / 从这里开始
