@@ -14,11 +14,35 @@ volumes=()
 for candidate in /Volumes/*; do
   [ -d "$candidate" ] && volumes+=("$candidate")
 done
-if [ "${#volumes[@]}" -ne 1 ]; then
-  echo "Connect exactly one USB volume, then run this launcher again."
+if [ "${#volumes[@]}" -eq 0 ]; then
+  echo "No mounted USB volume was found. Insert the USB drive, then run this launcher again."
   exit 2
 fi
-OUTPUT="${volumes[0]}/Codex-Migration-Package-$(date +%Y%m%d-%H%M%S)"
+
+USB_ROOT="${volumes[0]}"
+while true; do
+  echo
+  echo "Selected volume: $USB_ROOT"
+  if [ "${#volumes[@]}" -gt 1 ]; then
+    echo "Mounted volumes:"
+    for candidate in "${volumes[@]}"; do echo "  $candidate"; done
+  fi
+  printf "Use this volume for the migration package? [Y/n] "
+  IFS= read -r answer
+  case "$answer" in
+    ""|y|Y|yes|YES) break ;;
+    *)
+      printf "Enter the correct mounted volume path (for example /Volumes/USB-DATA): "
+      IFS= read -r requested
+      if [ -d "$requested" ] && [[ "$requested" == /Volumes/* ]]; then
+        USB_ROOT="$requested"
+      else
+        echo "That is not a mounted volume below /Volumes. Try again."
+      fi
+      ;;
+  esac
+done
+OUTPUT="${USB_ROOT}/Codex-Migration-Package-$(date +%Y%m%d-%H%M%S)"
 
 echo
 echo "Migration scope: portable .codex data plus every project Codex currently registers."

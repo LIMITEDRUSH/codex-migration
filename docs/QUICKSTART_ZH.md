@@ -15,6 +15,8 @@ Codex Migration 通过 U 盘迁移可携带的 Codex Desktop 数据和完整项�
    macOS：   START-EXPORT-TO-USB.command
    ```
 
+   写入前会显示识别到的 U 盘并要求确认。若不是正确的盘，输入 Windows 盘符或 macOS 的 `/Volumes/...` 卷路径。
+
 2. 确认窗口列出的 Codex 项目。若有从未在 Codex 打开过、但也要迁移的目录，输入 `名称=路径`；否则直接按 Enter。保留 U 盘生成的整个 `Codex-Migration-Package-时间戳` 文件夹。
 
 3. 在新电脑安装并打开 Codex 一次，然后完全退出。在 U 盘迁移包中运行：

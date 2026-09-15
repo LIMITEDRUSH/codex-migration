@@ -15,6 +15,8 @@ Codex Migration moves portable Codex Desktop data and complete project folders t
    macOS:   START-EXPORT-TO-USB.command
    ```
 
+   Confirm the displayed USB drive before any data is written. If it is not the right drive, enter its Windows drive letter or its macOS `/Volumes/...` path.
+
 2. Review the listed Codex projects. Add a folder that was never opened in Codex as `NAME=PATH`, or press Enter. Keep the generated `Codex-Migration-Package-<timestamp>` folder intact on the USB drive.
 
 3. On the new computer, install and open Codex once, then fully quit it. In the USB package run:

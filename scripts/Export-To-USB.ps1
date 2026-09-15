@@ -40,12 +40,29 @@ function Resolve-UsbRoot([string]$RequestedDrive) {
     return Resolve-UsbRoot $selected
 }
 
+function Confirm-UsbRoot([string]$CandidateDrive) {
+    while ($true) {
+        $candidate = Resolve-UsbRoot $CandidateDrive
+        $letter = $candidate.TrimEnd('\\')
+        $disk = Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DeviceID -eq $letter } | Select-Object -First 1
+        $label = if ($disk.VolumeName) { $disk.VolumeName } else { '(no label)' }
+        $free = [math]::Round($disk.FreeSpace / 1GB, 1)
+        Write-Host ''
+        Write-Host "Selected removable drive: $letter  $label  $free GB free"
+        $answer = Read-Host 'Use this drive for the migration package? [Y/n]'
+        if ([string]::IsNullOrWhiteSpace($answer) -or $answer -match '^[Yy]') {
+            return $candidate
+        }
+        $CandidateDrive = Read-Host 'Enter the correct removable drive letter (for example G)'
+    }
+}
+
 $codexHome = Join-Path $env:USERPROFILE '.codex'
 if (-not (Test-Path -LiteralPath $codexHome -PathType Container)) {
     throw "Codex home was not found at $codexHome. Start Codex once first, then fully quit it and retry."
 }
 
-$usbRoot = Resolve-UsbRoot $UsbDrive
+$usbRoot = Confirm-UsbRoot $UsbDrive
 $packageName = 'Codex-Migration-Package-' + (Get-Date -Format 'yyyyMMdd-HHmmss')
 $output = Join-Path $usbRoot $packageName
 $runner = Join-Path $PSScriptRoot 'codex-migration.py'
