@@ -51,11 +51,39 @@ $output = Join-Path $usbRoot $packageName
 $runner = Join-Path $PSScriptRoot 'codex-migration.py'
 $python = Get-PythonCommand
 
+Write-Host ''
+Write-Host 'Migration scope: portable .codex data plus every project Codex currently registers.'
+Write-Host 'The following list is a review step only; project files are not read or copied yet.'
+$scopeArguments = @()
+$scopeArguments += $python.Prefix
+$scopeArguments += @($runner, 'scope', '--codex-home', $codexHome)
+& $python.Command @scopeArguments
+if ($LASTEXITCODE -ne 0) {
+    throw 'Could not determine the Codex project scope. Resolve the reported missing path before exporting.'
+}
+
+$extraProjects = @()
+Write-Host ''
+Write-Host 'If a required folder was never opened as a Codex project, add it now as NAME=PATH.'
+Write-Host 'Press Enter without typing anything when there are no more unregistered projects.'
+while ($true) {
+    $extra = Read-Host 'Additional project (optional)'
+    if ([string]::IsNullOrWhiteSpace($extra)) { break }
+    if ($extra -notmatch '^[^\\/:=]+\s*=\s*.+$') {
+        Write-Host 'Use a simple name and an existing path, for example: StudyAssistant=E:\Projects\StudyAssistant' -ForegroundColor Yellow
+        continue
+    }
+    $extraProjects += $extra
+}
+
 Write-Host "Creating a self-contained Codex package at $output"
 Write-Host 'Codex/ChatGPT must be fully closed. The migration tool will refuse to continue if it is running.'
 $commandArguments = @()
 $commandArguments += $python.Prefix
 $commandArguments += @($runner, 'export', '--codex-home', $codexHome, '--output', $output)
+foreach ($extra in $extraProjects) {
+    $commandArguments += @('--project', $extra)
+}
 & $python.Command @commandArguments
 $code = $LASTEXITCODE
 if ($code -eq 0) {

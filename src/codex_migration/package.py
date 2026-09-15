@@ -340,6 +340,24 @@ def export_package(
     write_json(output / "package.json", package_metadata)
     inventory = inspect_codex_home(codex_home)
     write_json(output / "reports" / "source-inventory.json", inventory)
+    # This report is intentionally plain and reviewable on the USB drive.  It says
+    # what the package covers without pretending that Codex can infer unrelated
+    # folders merely mentioned in a conversation.
+    write_json(
+        output / "reports" / "coverage.json",
+        {
+            "schema": 1,
+            "included": {
+                "portable_codex_profile": {"source": str(codex_home), "summary": codex_summary},
+                "project_roots": project_summary,
+                "desktop_state_safety_snapshot": desktop_summary,
+            },
+            "selection_rule": "Every existing project root registered by Codex plus every explicitly supplied project root is copied in full.",
+            "not_automatically_discovered": "Folders never registered with Codex and not supplied as --project are outside this package.",
+            "not_included": "Authentication, browser credentials, OS keychain data, locks, SQLite WAL/SHM, and cache/runtime paths.",
+            "acceptance": "After restore, open every listed project and create a new task before deleting the source or package.",
+        },
+    )
     manifest_entries = write_manifest(output)
     verification = verify_manifest(output)
     if not verification["ok"]:

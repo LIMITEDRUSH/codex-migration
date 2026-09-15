@@ -31,6 +31,9 @@ class PackageTests(unittest.TestCase):
             self.assertNotIn("codex-home/auth.json", names)
             self.assertEqual(result["source_inventory"]["portable_file_count"], 2)
             self.assertEqual(result["source_inventory"]["volatile_file_count"], 1)
+            coverage = json.loads((output / "reports" / "coverage.json").read_text(encoding="utf-8"))
+            self.assertEqual(coverage["included"]["portable_codex_profile"]["summary"]["files"], 2)
+            self.assertIn("not_automatically_discovered", coverage)
             self.assertTrue(verify_manifest(output)["ok"])
 
     def test_discovers_registered_projects_and_refuses_missing_roots(self):

@@ -19,6 +19,7 @@ from .package import (
 from .project_audit import audit_project
 from .one_click import restore_everything
 from .restore import apply_restore, build_restore_plan
+from .scope import build_scope
 from .util import write_json
 
 
@@ -37,6 +38,11 @@ def parser() -> argparse.ArgumentParser:
     inspect = subcommands.add_parser("inspect", help="Inspect a Codex home without changing it")
     inspect.add_argument("--codex-home", type=_path, required=True)
     inspect.add_argument("--report", type=_path, help="Optional JSON output path")
+
+    scope = subcommands.add_parser("scope", help="Show exactly which project roots will be included")
+    scope.add_argument("--codex-home", type=_path, required=True)
+    scope.add_argument("--project", action="append", default=[], metavar="NAME=PATH", help="Explicitly include an unregistered project")
+    scope.add_argument("--report", type=_path, help="Optional JSON output path")
 
     export = subcommands.add_parser("export", help="Create a verified portable package")
     export.add_argument("--codex-home", type=_path, required=True)
@@ -91,6 +97,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if arguments.command == "inspect":
             result = inspect_codex_home(arguments.codex_home)
+            if arguments.report:
+                write_json(arguments.report, result)
+            _print(result)
+            return 0
+        if arguments.command == "scope":
+            result = build_scope(arguments.codex_home, [parse_project(value) for value in arguments.project])
             if arguments.report:
                 write_json(arguments.report, result)
             _print(result)

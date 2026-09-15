@@ -1,6 +1,6 @@
 # Codex Migration
 
-`codex-migration` is a local-first, cross-platform migration and recovery toolkit for Codex Desktop data.
+`codex-migration` is a local-first, cross-platform migration and recovery toolkit for Codex Desktop data. Version 0.2 provides a USB-first one-click product flow: scope review, package creation, integrity verification, staging restore, path remapping, and acceptance evidence.
 
 It was designed from an actual Windows profile migration: project files, local conversations, sessions, skills, plugins, SQLite state, attachments, and UI project mappings are related but **not the same thing**. Copying one of them alone is not a complete migration.
 
@@ -12,6 +12,7 @@ It was designed from an actual Windows profile migration: project files, local c
 - Creates a self-contained, USB-first TAR package with SHA-256 manifest verification. It never assumes a cloud drive will resync data.
 - Excludes authentication and runtime lock files by default.
 - Automatically copies every existing project root registered by Codex, plus every extra project folder explicitly supplied with `--project`.
+- Shows the exact project-root coverage before one-click export, and writes `reports/coverage.json` into every USB package for later audit.
 - Retains the conventional Codex desktop-state directory as a separate, non-auth **manual-only safety snapshot** when it exists; it is never blindly written over the target desktop state.
 - Verifies a package before any restore.
 - Produces a restore plan by default; `--apply` is required to write.
@@ -41,8 +42,8 @@ No third-party Python dependencies are required.
 
 一次性前提：源电脑和目标电脑都要有 Python 3.10+；目标电脑还要先安装 Codex、启动一次后完全退出。无需 OneDrive，也不需要在新电脑重新下载本项目。
 
-1. 源电脑插入 U 盘，完全退出 Codex/ChatGPT，双击项目根目录的 [START-EXPORT-TO-USB.cmd](START-EXPORT-TO-USB.cmd)。它会自动选择唯一的 U 盘（多块时才询问盘符；优先 G:），并创建带时间戳的 `Codex-Migration-Package-*` 文件夹。
-2. 导出器自动收集可移植 `.codex` 数据、所有登记且存在的 Codex 项目、额外桌面状态安全快照，并把恢复器一同写到 U 盘。缺失的已登记项目会使导出停止，避免漏迁移。
+1. 源电脑插入 U 盘，完全退出 Codex/ChatGPT，双击项目根目录的 [START-EXPORT-TO-USB.cmd](START-EXPORT-TO-USB.cmd)（Mac 为 `START-EXPORT-TO-USB.command`）。它会自动选择唯一的 U 盘（Windows 多块时才询问盘符；优先 G:），并创建带时间戳的 `Codex-Migration-Package-*` 文件夹。
+2. 导出器先列出 Codex 已登记项目；若有从未在 Codex 打开过、但也必须迁走的文件夹，可在同一窗口输入 `名称=路径` 补充。随后它收集可移植 `.codex` 数据、所有选定项目、额外桌面状态安全快照，并把恢复器一同写到 U 盘。缺失的已登记项目会使导出停止，避免漏迁移。
 3. 新电脑安装并完全退出 Codex，插入 U 盘后双击迁移包内的：
    - Windows：`launcher\RESTORE-WINDOWS.cmd`
    - macOS：`launcher/RESTORE-MAC.command`
@@ -109,6 +110,7 @@ Codex-Migration-Package/
 | Command | Writes data? | Purpose |
 | --- | --- | --- |
 | `inspect` | No | Inventory sessions, databases, and project-state fields. |
+| `scope` | No | Show the registered and explicit project roots that an export will cover. |
 | `export` | Yes, package only | Build a verified self-contained USB package. Archive transport and desktop-state safety snapshot are defaults. |
 | `verify` | No | Recompute every manifest hash. |
 | `project-audit` | No | Check a restored project, Git HEAD/status, and worktree metadata. |
