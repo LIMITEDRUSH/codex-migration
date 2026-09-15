@@ -22,12 +22,16 @@ class MappingTests(unittest.TestCase):
             "rootPaths": [r"C:\Users\Lenovo\Documents"],
             "thread-workspace-root-hints": {"thread-id": r"C:\Users\Lenovo\Desktop\YEAR4"},
             "thread-writable-roots": {"thread-id": [r"C:\Users\Lenovo\Documents"]},
+            "electron-saved-workspace-roots": [r"C:\Users\Lenovo\Desktop\YEAR4"],
+            "active-workspace-roots": [r"C:\Users\Lenovo\Documents"],
             "prompt-history": {"entries": [r"C:\Users\Lenovo\must-remain"]},
         }
         rewritten, count = rewrite_structured_paths(original, mappings)
-        self.assertEqual(count, 4)
+        self.assertEqual(count, 6)
         self.assertEqual(rewritten["cwd"], r"D:\Users\Limit\Desktop\YEAR4")
         self.assertEqual(rewritten["rootPaths"], [r"D:\Users\Limit\Documents"])
         self.assertEqual(rewritten["thread-workspace-root-hints"]["thread-id"], r"D:\Users\Limit\Desktop\YEAR4")
         self.assertEqual(rewritten["thread-writable-roots"]["thread-id"], [r"D:\Users\Limit\Documents"])
+        self.assertEqual(rewritten["electron-saved-workspace-roots"], [r"D:\Users\Limit\Desktop\YEAR4"])
+        self.assertEqual(rewritten["active-workspace-roots"], [r"D:\Users\Limit\Documents"])
         self.assertEqual(rewritten["prompt-history"], original["prompt-history"])

@@ -13,6 +13,8 @@ SCALAR_PATH_KEYS = {
     "workspaceRoot",
     "workspace_root",
     "workspacePath",
+    "rollout_path",
+    "rolloutPath",
 }
 LIST_PATH_KEYS = {
     "rootPaths",

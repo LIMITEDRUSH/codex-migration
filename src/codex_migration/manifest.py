@@ -33,7 +33,11 @@ def verify_manifest(package_root: Path) -> dict[str, object]:
         except ValueError:
             failures.append(f"Malformed manifest line: {line!r}")
             continue
-        target = package_root / Path(relative)
+        relative_path = Path(relative)
+        if relative_path.is_absolute() or ".." in relative_path.parts:
+            failures.append(f"Unsafe manifest path: {relative}")
+            continue
+        target = package_root / relative_path
         checked += 1
         if not target.is_file():
             failures.append(f"Missing: {relative}")

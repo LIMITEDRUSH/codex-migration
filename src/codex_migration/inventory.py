@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-from .util import host_metadata, iter_files
+from .util import host_metadata, is_excluded, iter_files
 
 
 def _sqlite_summary(path: Path) -> dict[str, Any]:
@@ -31,17 +31,24 @@ def inspect_codex_home(codex_home: Path) -> dict[str, Any]:
         "host": host_metadata(),
         "exists": codex_home.is_dir(),
         "file_count": 0,
+        "portable_file_count": 0,
+        "volatile_file_count": 0,
         "session_files": 0,
         "archived_session_files": 0,
         "sqlite": [],
         "global_state": {},
         "stale_project_roots": [],
+        "stale_workspace_references": [],
     }
     if not codex_home.is_dir():
         return result
     for file_path in iter_files(codex_home):
         result["file_count"] += 1
         relative = file_path.relative_to(codex_home)
+        if is_excluded(relative):
+            result["volatile_file_count"] += 1
+        else:
+            result["portable_file_count"] += 1
         if relative.parts and relative.parts[0] == "sessions" and file_path.suffix == ".jsonl":
             result["session_files"] += 1
         if relative.parts and relative.parts[0] == "archived_sessions" and file_path.suffix == ".jsonl":
@@ -65,6 +72,27 @@ def inspect_codex_home(codex_home: Path) -> dict[str, Any]:
                     for root in project.get("rootPaths", []):
                         if isinstance(root, str) and not Path(root).is_dir():
                             result["stale_project_roots"].append({"project_id": project_id, "path": root})
+            for field in ("thread-workspace-root-hints", "thread-projectless-output-directories"):
+                values = state.get(field)
+                if isinstance(values, dict):
+                    for owner, path in values.items():
+                        if isinstance(path, str) and not Path(path).exists():
+                            result["stale_workspace_references"].append({"field": field, "owner": owner, "path": path})
+            writable = state.get("thread-writable-roots")
+            if isinstance(writable, dict):
+                for owner, paths in writable.items():
+                    if isinstance(paths, list):
+                        for path in paths:
+                            if isinstance(path, str) and not Path(path).exists():
+                                result["stale_workspace_references"].append(
+                                    {"field": "thread-writable-roots", "owner": owner, "path": path}
+                                )
+            for field in ("electron-saved-workspace-roots", "active-workspace-roots"):
+                paths = state.get(field)
+                if isinstance(paths, list):
+                    for path in paths:
+                        if isinstance(path, str) and not Path(path).exists():
+                            result["stale_workspace_references"].append({"field": field, "owner": None, "path": path})
         except (OSError, json.JSONDecodeError) as error:
             result["global_state"]["error"] = str(error)
     return result

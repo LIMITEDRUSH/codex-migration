@@ -24,7 +24,17 @@ EXCLUDED_BASENAMES = {
     "singletonlock",
 }
 EXCLUDED_SUFFIXES = {"-wal", "-shm", ".lock", ".pid", ".tmp"}
-EXCLUDED_PARTS = {"cache", "code cache", "gpu cache", "temp", "tmp", "crashpad"}
+EXCLUDED_PARTS = {
+    "cache",
+    "code cache",
+    "gpu cache",
+    "temp",
+    "tmp",
+    ".tmp",
+    ".sandbox",
+    ".sandbox-bin",
+    "crashpad",
+}
 KNOWN_APP_NAMES = {
     "chatgpt.exe",
     "codex.exe",
@@ -98,8 +108,26 @@ def iter_files(root: Path) -> Iterable[Path]:
 
 
 def ensure_empty_or_missing(directory: Path) -> None:
+    if directory.exists() and not directory.is_dir():
+        raise MigrationError(f"Destination exists but is not a directory: {directory}")
     if directory.exists() and any(directory.iterdir()):
         raise MigrationError(f"Destination must be absent or empty: {directory}")
+
+
+def require_free_space(destination: Path, required_bytes: int) -> None:
+    """Fail before writing a package which cannot fit on its destination volume."""
+    probe = destination
+    while not probe.exists() and probe != probe.parent:
+        probe = probe.parent
+    try:
+        free_bytes = shutil.disk_usage(probe).free
+    except OSError as error:
+        raise MigrationError(f"Cannot determine free space for package destination {destination}: {error}") from error
+    if free_bytes < required_bytes:
+        raise MigrationError(
+            f"Package destination has {free_bytes:,} bytes free but needs at least {required_bytes:,} bytes. "
+            "Choose a larger USB drive or reduce only explicitly nonessential input."
+        )
 
 
 def known_running_processes() -> list[str]:
@@ -114,8 +142,8 @@ def known_running_processes() -> list[str]:
         else:
             completed = subprocess.run(["ps", "-axo", "comm="], check=True, capture_output=True, text=True)
             names = {Path(line.strip()).name.lower() for line in completed.stdout.splitlines() if line.strip()}
-    except (OSError, subprocess.CalledProcessError):
-        return []
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise MigrationError(f"Cannot safely determine whether Codex is running: {error}") from error
     return sorted(name for name in names if name in KNOWN_APP_NAMES)
 
 

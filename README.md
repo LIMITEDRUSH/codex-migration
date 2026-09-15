@@ -9,9 +9,10 @@ It was designed from an actual Windows profile migration: project files, local c
 ## What it does
 
 - Inspects a Codex home without changing it.
-- Creates a portable directory package with SHA-256 manifest verification.
+- Creates a self-contained, USB-first TAR package with SHA-256 manifest verification. It never assumes a cloud drive will resync data.
 - Excludes authentication and runtime lock files by default.
-- Copies selected project folders separately from Codex state.
+- Automatically copies every existing project root registered by Codex, plus every extra project folder explicitly supplied with `--project`.
+- Retains the conventional Codex desktop-state directory as a separate, non-auth **manual-only safety snapshot** when it exists; it is never blindly written over the target desktop state.
 - Verifies a package before any restore.
 - Produces a restore plan by default; `--apply` is required to write.
 - Backs up the full destination Codex home before restoration.
@@ -21,6 +22,7 @@ It was designed from an actual Windows profile migration: project files, local c
 ## Non-goals and limits
 
 - It does not copy `auth.json`, browser cookies, OS keychain data, API keys, or desktop credentials. Sign in again on the new computer.
+- It copies every project currently registered by Codex by default. Add unregistered work with `--project NAME=PATH`; the package is complete only for those registered or explicitly supplied roots, not for arbitrary folders elsewhere on the computer.
 - It does not modify project source files during path mapping.
 - It does not rewrite historical conversation prose, shell commands, or tool output.
 - Project registration is schema-dependent. After a cross-platform restore, open each restored project folder once in Codex and confirm that a new task can be created.
@@ -41,7 +43,7 @@ On the source computer:
 python -m codex_migration inspect --codex-home $env:USERPROFILE\.codex
 python -m codex_migration export --codex-home $env:USERPROFILE\.codex `
   --output G:\Codex-Migration-Package `
-  --project StudyAssistant=C:\Users\Limit\Desktop\YEAR4
+  --project UnregisteredProject=C:\Users\Limit\Documents\UnregisteredProject
 python -m codex_migration verify --package G:\Codex-Migration-Package
 ```
 
@@ -77,8 +79,10 @@ python -m codex_migration inspect --codex-home ~/.codex
 Codex-Migration-Package/
 ├── package.json                 # format and safety metadata
 ├── MANIFEST.sha256              # SHA-256 for every packaged file
-├── codex-home/                  # portable, non-auth Codex profile data
-├── projects/                    # only projects explicitly requested
+├── archives/                    # USB-safe single-file payloads; avoids exFAT small-file bloat
+│   ├── codex-home.tar           # portable, non-auth Codex profile data
+│   ├── projects/                # every registered/explicit project, byte-for-byte
+│   └── desktop-state-safety.tar # optional, portable snapshot; never auto-applied
 └── reports/                     # inventory and restore reports
 ```
 
@@ -87,11 +91,12 @@ Codex-Migration-Package/
 | Command | Writes data? | Purpose |
 | --- | --- | --- |
 | `inspect` | No | Inventory sessions, databases, and project-state fields. |
-| `export` | Yes, package only | Build a verified portable package. |
+| `export` | Yes, package only | Build a verified self-contained USB package. Archive transport and desktop-state safety snapshot are defaults. |
 | `verify` | No | Recompute every manifest hash. |
+| `project-audit` | No | Check a restored project, Git HEAD/status, and worktree metadata. |
 | `restore` | No by default | Build a restore plan; `--apply` stages and replaces the target only after a full backup. |
 
-Read [Safety and recovery](docs/SAFETY.md), [Architecture](docs/ARCHITECTURE.md), and the step-by-step [Chinese migration runbook](docs/RUNBOOK_ZH.md) before restoring data.
+Read [Safety and recovery](docs/SAFETY.md), [Architecture](docs/ARCHITECTURE.md), the field-tested [migration lessons](docs/LESSONS_FROM_FIELD_MIGRATION.md), and the step-by-step [Chinese migration runbook](docs/RUNBOOK_ZH.md) before restoring data.
 
 ## Development
 
