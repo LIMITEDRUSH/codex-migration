@@ -31,20 +31,36 @@ It was designed from an actual Windows profile migration: project files, local c
 ## Requirements
 
 - Python 3.10 or newer.
-- Codex/ChatGPT Desktop and all Codex CLI sessions fully exited before `export --apply` or `restore --apply`.
+- Codex/ChatGPT Desktop and all Codex CLI sessions fully exited before export or `restore --apply`.
 
 No third-party Python dependencies are required.
 
 ## Quick start
 
+## 一键 U 盘迁移（推荐）
+
+一次性前提：源电脑和目标电脑都要有 Python 3.10+；目标电脑还要先安装 Codex、启动一次后完全退出。无需 OneDrive，也不需要在新电脑重新下载本项目。
+
+1. 源电脑插入 U 盘，完全退出 Codex/ChatGPT，双击项目根目录的 [START-EXPORT-TO-USB.cmd](START-EXPORT-TO-USB.cmd)。它会自动选择唯一的 U 盘（多块时才询问盘符；优先 G:），并创建带时间戳的 `Codex-Migration-Package-*` 文件夹。
+2. 导出器自动收集可移植 `.codex` 数据、所有登记且存在的 Codex 项目、额外桌面状态安全快照，并把恢复器一同写到 U 盘。缺失的已登记项目会使导出停止，避免漏迁移。
+3. 新电脑安装并完全退出 Codex，插入 U 盘后双击迁移包内的：
+   - Windows：`launcher\RESTORE-WINDOWS.cmd`
+   - macOS：`launcher/RESTORE-MAC.command`
+4. 恢复器自动校验哈希、备份目标 `.codex`、把项目写入用户主目录的 `Codex-Restored-Projects`（刻意避开可能被 OneDrive 重定向的 Documents；若同名已存在则使用带时间戳的新目录）、根据包内记录重写路径，并在状态中仍有失效项目路径时停止。
+5. 打开 Codex 后重新登录；逐一打开恢复项目，并创建一个新任务验收。不要删除旧电脑、U 盘包或自动生成的备份，直到验收完成。
+
+详细中文说明见 [一键迁移指南](docs/ONE_CLICK_ZH.md)。
+
+## Advanced/manual commands
+
 On the source computer:
 
 ```powershell
-python -m codex_migration inspect --codex-home $env:USERPROFILE\.codex
-python -m codex_migration export --codex-home $env:USERPROFILE\.codex `
+py .\scripts\codex-migration.py inspect --codex-home $env:USERPROFILE\.codex
+py .\scripts\codex-migration.py export --codex-home $env:USERPROFILE\.codex `
   --output G:\Codex-Migration-Package `
   --project UnregisteredProject=C:\Users\Limit\Documents\UnregisteredProject
-python -m codex_migration verify --package G:\Codex-Migration-Package
+py .\scripts\codex-migration.py verify --package G:\Codex-Migration-Package
 ```
 
 Transfer the entire package privately. On the target computer, install and launch Codex once, then fully quit it. Plan a restore first:
@@ -53,7 +69,7 @@ Transfer the entire package privately. On the target computer, install and launc
 python -m codex_migration restore \
   --package /Volumes/USB/Codex-Migration-Package \
   --target-codex-home ~/.codex \
-  --map 'C:\\Users\\Limit\\Desktop\\YEAR4=/Users/me/Documents/StudyAssistant'
+  --map 'C:\\Users\\Limit\\Desktop\\YEAR4=/Users/me/Codex-Restored-Projects/StudyAssistant'
 ```
 
 Apply only after reviewing the plan and ensuring the target state can be replaced:
@@ -62,8 +78,8 @@ Apply only after reviewing the plan and ensuring the target state can be replace
 python -m codex_migration restore \
   --package /Volumes/USB/Codex-Migration-Package \
   --target-codex-home ~/.codex \
-  --restore-projects-to ~/Documents/Codex-Restored-Projects \
-  --map 'C:\\Users\\Limit\\Desktop\\YEAR4=/Users/me/Documents/StudyAssistant' \
+  --restore-projects-to ~/Codex-Restored-Projects \
+  --map 'C:\\Users\\Limit\\Desktop\\YEAR4=/Users/me/Codex-Restored-Projects/StudyAssistant' \
   --replace-existing --apply
 ```
 
@@ -83,6 +99,8 @@ Codex-Migration-Package/
 │   ├── codex-home.tar           # portable, non-auth Codex profile data
 │   ├── projects/                # every registered/explicit project, byte-for-byte
 │   └── desktop-state-safety.tar # optional, portable snapshot; never auto-applied
+├── launcher/                    # double-click restore launchers for Windows and macOS
+├── toolkit/                     # self-contained Python runtime copied into this package
 └── reports/                     # inventory and restore reports
 ```
 
@@ -95,6 +113,7 @@ Codex-Migration-Package/
 | `verify` | No | Recompute every manifest hash. |
 | `project-audit` | No | Check a restored project, Git HEAD/status, and worktree metadata. |
 | `restore` | No by default | Build a restore plan; `--apply` stages and replaces the target only after a full backup. |
+| `one-click-restore` | Yes | Used by the bundled launcher; generates mappings from package metadata and restores after verification. |
 
 Read [Safety and recovery](docs/SAFETY.md), [Architecture](docs/ARCHITECTURE.md), the field-tested [migration lessons](docs/LESSONS_FROM_FIELD_MIGRATION.md), and the step-by-step [Chinese migration runbook](docs/RUNBOOK_ZH.md) before restoring data.
 

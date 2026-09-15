@@ -46,8 +46,8 @@ python scripts\codex-migration.py verify --package G:\Codex-Migration-Package
 python scripts/codex-migration.py restore \
   --package /Volumes/USB/Codex-Migration-Package \
   --target-codex-home ~/.codex \
-  --restore-projects-to ~/Documents/Codex-Restored-Projects \
-  --map 'C:\\Users\\Limit\\Desktop\\YEAR4=/Users/me/Documents/Codex-Restored-Projects/StudyAssistant' \
+  --restore-projects-to ~/Codex-Restored-Projects \
+  --map 'C:\\Users\\Limit\\Desktop\\YEAR4=/Users/me/Codex-Restored-Projects/StudyAssistant' \
   --report restore-plan.codex-migration-report.json
 ```
 

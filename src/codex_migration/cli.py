@@ -17,6 +17,7 @@ from .package import (
     parse_project,
 )
 from .project_audit import audit_project
+from .one_click import restore_everything
 from .restore import apply_restore, build_restore_plan
 from .util import write_json
 
@@ -75,6 +76,13 @@ def parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Apply despite stale project/workspace paths after review; normally this is refused",
     )
+
+    one_click_restore = subcommands.add_parser(
+        "one-click-restore", help="Restore a current self-contained USB package with recorded automatic mappings"
+    )
+    one_click_restore.add_argument("--package", type=_path, required=True)
+    one_click_restore.add_argument("--target-codex-home", type=_path)
+    one_click_restore.add_argument("--restore-projects-to", type=_path)
     return command_parser
 
 
@@ -93,6 +101,15 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if result["ok"] else 2
         if arguments.command == "project-audit":
             _print(audit_project(arguments.project))
+            return 0
+        if arguments.command == "one-click-restore":
+            _print(
+                restore_everything(
+                    arguments.package,
+                    target_codex_home=arguments.target_codex_home,
+                    project_destination=arguments.restore_projects_to,
+                )
+            )
             return 0
         if arguments.command == "export":
             additional_projects = [parse_project(value) for value in arguments.project]

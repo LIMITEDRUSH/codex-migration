@@ -4,6 +4,7 @@ import tarfile
 import json
 import os
 import platform
+import shutil
 from pathlib import Path
 
 from .errors import MigrationError
@@ -24,6 +25,95 @@ from .util import (
 ARCHIVE_TRANSPORT = "archive"
 DIRECTORY_TRANSPORT = "directory"
 SUPPORTED_TRANSPORTS = {ARCHIVE_TRANSPORT, DIRECTORY_TRANSPORT}
+
+_RUNTIME_LAUNCHER = '''"""Run the bundled Codex Migration toolkit without installing it."""
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from codex_migration.cli import main  # noqa: E402
+
+raise SystemExit(main())
+'''
+
+_WINDOWS_RESTORE = r'''param(
+    [Parameter(Mandatory = $true)]
+    [string]$PackageRoot
+)
+
+$ErrorActionPreference = 'Stop'
+$PackageRoot = (Resolve-Path -LiteralPath $PackageRoot).Path
+$Runner = Join-Path $PackageRoot 'toolkit\scripts\codex-migration.py'
+if (-not (Test-Path -LiteralPath $Runner)) {
+    throw "The bundled recovery toolkit is missing: $Runner"
+}
+if (Get-Command py -ErrorAction SilentlyContinue) {
+    & py -3 $Runner one-click-restore --package $PackageRoot
+} elseif (Get-Command python -ErrorAction SilentlyContinue) {
+    & python $Runner one-click-restore --package $PackageRoot
+} else {
+    throw 'Python 3.10 or newer is required. Install Python, then run this file again.'
+}
+exit $LASTEXITCODE
+'''
+
+_WINDOWS_RESTORE_CMD = r'''@echo off
+setlocal
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\toolkit\scripts\Restore-From-USB.ps1" -PackageRoot "%~dp0.."
+set "CODE=%ERRORLEVEL%"
+if not "%CODE%"=="0" pause
+exit /b %CODE%
+'''
+
+_MAC_RESTORE = r'''#!/bin/bash
+set -u
+ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
+RUNNER="$ROOT/toolkit/scripts/codex-migration.py"
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "Python 3.10 or newer is required. Install Python 3, then run this file again."
+  read -r -p "Press Return to close..." _
+  exit 2
+fi
+exec python3 "$RUNNER" one-click-restore --package "$ROOT"
+'''
+
+
+def _embed_recovery_toolkit(output: Path) -> dict[str, str]:
+    """Put a dependency-free copy of this runtime and double-click launchers in each package."""
+    toolkit = output / "toolkit"
+    module_source = Path(__file__).resolve().parent
+    for source in module_source.rglob("*.py"):
+        relative = source.relative_to(module_source)
+        destination = toolkit / "src" / "codex_migration" / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+    runner = toolkit / "scripts" / "codex-migration.py"
+    runner.parent.mkdir(parents=True, exist_ok=True)
+    runner.write_text(_RUNTIME_LAUNCHER, encoding="utf-8", newline="\n")
+    restore_ps1 = toolkit / "scripts" / "Restore-From-USB.ps1"
+    restore_ps1.write_text(_WINDOWS_RESTORE, encoding="utf-8", newline="\r\n")
+
+    launchers = output / "launcher"
+    launchers.mkdir(parents=True, exist_ok=True)
+    (launchers / "RESTORE-WINDOWS.cmd").write_text(_WINDOWS_RESTORE_CMD, encoding="utf-8", newline="\r\n")
+    mac_launcher = launchers / "RESTORE-MAC.command"
+    mac_launcher.write_text(_MAC_RESTORE, encoding="utf-8", newline="\n")
+    mac_launcher.chmod(0o755)
+    (launchers / "README.txt").write_text(
+        "Windows: double-click RESTORE-WINDOWS.cmd after installing Codex and fully quitting it.\n"
+        "macOS: double-click RESTORE-MAC.command after installing Codex and fully quitting it.\n"
+        "The recovery tool verifies the package, backs up the target Codex home, restores projects, and maps paths.\n"
+        "It cannot migrate login credentials; sign in again after recovery.\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    return {
+        "windows": "launcher/RESTORE-WINDOWS.cmd",
+        "macos": "launcher/RESTORE-MAC.command",
+        "runtime": "toolkit/scripts/codex-migration.py",
+    }
 
 
 def parse_project(value: str) -> tuple[str, Path]:
@@ -231,16 +321,20 @@ def export_package(
             desktop_payload = "desktop-state-safety"
         payloads = {"codex_home": "codex-home", "projects": project_payloads, "desktop_state_safety": desktop_payload}
 
+    recovery_launcher = _embed_recovery_toolkit(output)
     package_metadata = {
-        "schema": 2,
+        "schema": 3,
         "created_at": utc_timestamp(),
         "source": host_metadata(),
+        "source_codex_home": str(codex_home),
         "transport": transport,
         "portable_profile": "codex-home",
         "payloads": payloads,
         "excluded": "auth, browser credentials, locks, WAL/SHM, and cache/runtime paths",
         "projects": sorted(project_summary),
+        "project_sources": {name: str(path) for name, path in projects},
         "desktop_state_safety": {"source": str(desktop_state), "restore": "manual-only"} if desktop_state else None,
+        "recovery_launcher": recovery_launcher,
         "cloud_assumption": "none; all included payloads are written to this package",
     }
     write_json(output / "package.json", package_metadata)
@@ -257,5 +351,6 @@ def export_package(
         "codex": codex_summary,
         "projects": project_summary,
         "desktop_state_safety": desktop_summary,
+        "recovery_launcher": recovery_launcher,
         "source_inventory": inventory,
     }
